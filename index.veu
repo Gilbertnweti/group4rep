@@ -1,0 +1,292 @@
+
+<template>
+  <div>
+    <!-- Header Section -->
+    <header class="header-section">
+      <div class="header-overlay">
+        <h1 class="header-title">Smart AgroLTD</h1>
+        <p class="header-subtitle">Innovative Agricultural Solutions</p>
+      </div>
+    </header>
+
+    <!-- About Section -->
+    <section class="about-section">
+      <div class="about-content">
+        <h2>About Us</h2>
+        <p>
+          At Smart AgroLTD, we combine technology with agriculture to empower
+          farmers and revolutionize the way we grow food. Our dedicated team of
+          professionals ensures high-quality solutions tailored to meet the
+          demands of modern agriculture.
+        </p>
+      </div>
+    </section>
+
+    <!-- Employees Section -->
+    <section class="team-section">
+      <div class="container">
+        <h2 class="section-title">Meet Our Team</h2>
+        <div class="team-grid">
+          <div
+            v-for="employee in employees"
+            :key="employee.id"
+            class="team-card"
+          >
+            <div class="card-header">
+              <h3 class="employee-name">{{ employee.name }}</h3>
+              <p class="employee-role">{{ employee.role?.name }}</p>
+            </div>
+            <div class="card-body">
+              <p class="employee-detail">
+                <i class="bi bi-envelope"></i> {{ employee.email }}
+              </p>
+              <p class="employee-detail">
+                <i class="bi bi-building"></i> {{ employee.department?.name }}
+              </p>
+            </div>
+            <div class="card-footer">
+              <button
+                class="btn btn-primary"
+                @click="editEmployee(employee)"
+              >
+                Edit
+              </button>
+              <button
+                class="btn btn-danger"
+                @click="deleteEmployee(employee.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<script setup>
+  import { ref, onMounted } from "vue";
+  import axios from "axios";
+  import endpoint from "../helpers/endpoint";
+
+  const employees = ref([]);
+  const roles = ref([]);
+  const departments = ref([]);
+  const currentEmployee = ref({ name: "", email: "", role: "", department: "" });
+  const showEmployeeModal = ref(false);
+  const isEditing = ref(false);
+
+  const API_BASE_URL = endpoint;
+
+  const toggleEmployeeModal = () => {
+    showEmployeeModal.value = !showEmployeeModal.value;
+    if (!showEmployeeModal.value) {
+      resetCurrentEmployee();
+      isEditing.value = false;
+    }
+  };
+
+  const resetCurrentEmployee = () => {
+    currentEmployee.value = { name: "", email: "", role: "", department: "" };
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/employees`);
+      employees.value = response.data;
+    } catch (error) {
+      console.error("Error fetching employees:", error.message);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/roles`);
+      roles.value = response.data;
+    } catch (error) {
+      console.error("Error fetching roles:", error.message);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/departments`);
+      departments.value = response.data;
+    } catch (error) {
+      console.error("Error fetching departments:", error.message);
+    }
+  };
+
+  const addEmployee = async () => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/employees`,
+        currentEmployee.value
+      );
+      employees.value.push(response.data);
+      toggleEmployeeModal();
+    } catch (error) {
+      console.error("Error adding employee:", error.message);
+    }
+  };
+
+  const editEmployee = (employee) => {
+    currentEmployee.value = {
+      ...employee,
+      role: employee.role.id,
+      department: employee.department.id,
+    };
+    isEditing.value = true;
+    toggleEmployeeModal();
+  };
+
+  const updateEmployee = async () => {
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/employees/${currentEmployee.value.id}`,
+        currentEmployee.value
+      );
+      const index = employees.value.findIndex((e) => e.id === response.data.id);
+      if (index !== -1) {
+        employees.value[index] = response.data;
+      }
+      toggleEmployeeModal();
+    } catch (error) {
+      console.error("Error updating employee:", error.message);
+    }
+  };
+
+  const deleteEmployee = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/employees/${id}`);
+      employees.value = employees.value.filter((e) => e.id !== id);
+    } catch (error) {
+      console.error("Error deleting employee:", error.message);
+    }
+  };
+
+  onMounted(() => {
+    fetchEmployees();
+    fetchRoles();
+    fetchDepartments();
+  });
+</script>
+
+<style scoped>
+/* Header Section */
+.header-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  background: url("https://via.placeholder.com/1920x600") no-repeat center center;
+  background-size: cover;
+  position: relative;
+  color: #fff;
+  text-align: center;
+}
+
+.header-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 30px;
+  border-radius: 10px;
+}
+
+.header-title {
+  font-size: 4rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.header-subtitle {
+  font-size: 1.5rem;
+}
+
+/* About Section */
+.about-section {
+  padding: 40px 20px;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+.about-content h2 {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.about-content p {
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+/* Team Section */
+.team-section {
+  padding: 40px 20px;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 30px;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.team-card {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.team-card:hover {
+  transform: translateY(-5px);
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.card-body {
+  text-align: center;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn {
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+</style>
